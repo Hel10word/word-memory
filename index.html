@@ -6,631 +6,225 @@
     <title>记住它 - 单词记忆工具</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <style>
-        :root {
-            --primary-color: #3498db;
-            --success-color: #2ecc71;
-            --danger-color: #e74c3c;
-            --dark-color: #2c3e50;
-            --light-color: #ecf0f1;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            transition: background-color 0.3s ease;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            transition: background-color 0.3s ease;
         }
-        
         .container {
             max-width: 800px;
-            margin: 0 auto;
+            margin: auto;
             padding: 20px;
         }
-        
-        #app {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 70vh;
-        }
-        
         #wordBoard {
-            font-size: 5rem;
+            font-size: 4rem;
             text-align: center;
             margin: 2rem 0;
-            min-height: 200px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            transition: all 0.3s ease;
-            border-radius: 10px;
-            padding: 1rem;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-        
-        .stats {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-            font-size: 1rem;
-        }
-        
         .control-panel {
             position: fixed;
-            bottom: 20px;
+            bottom: 0;
             left: 0;
             right: 0;
             text-align: center;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             padding: 10px;
             border-top: 1px solid #ddd;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            z-index: 1000; /* 确保控制面板在最上层 */
         }
-        
-        .btn {
-            margin: 0 5px;
-            transition: all 0.2s;
+        #results {
+            padding-bottom: 80px; /* 给底部控制面板留出空间 */
         }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-        }
-        
-        .results-table {
-            width: 100%;
-            margin-top: 20px;
-            border-collapse: collapse;
-        }
-        
-        .results-table th, .results-table td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
-        
-        .results-table th {
-            background-color: var(--primary-color);
-            color: white;
-        }
-        
-        .results-table tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-        
-        .keyboard-shortcuts {
-            margin-top: 10px;
-            font-size: 0.8rem;
-            color: #777;
-        }
-        
-        .flip-card {
-            perspective: 1000px;
-            width: 100%;
-            height: 200px;
-        }
-        
-        .flip-card-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            text-align: center;
-            transition: transform 0.6s;
-            transform-style: preserve-3d;
-        }
-        
-        .flipped .flip-card-inner {
-            transform: rotateY(180deg);
-        }
-        
-        .flip-card-front, .flip-card-back {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-        }
-        
-        .flip-card-back {
-            transform: rotateY(180deg);
-        }
-        
-        .progress-bar-container {
-            width: 100%;
-            height: 10px;
-            background-color: #eee;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            overflow: hidden;
-        }
-        
-        .progress-bar {
-            height: 100%;
-            background-color: var(--primary-color);
-            transition: width 0.3s ease;
-        }
-        
-        @media (max-width: 768px) {
-            #wordBoard {
-                font-size: 3rem;
-            }
-            
-            .control-panel {
-                flex-direction: column;
-            }
-            
-            .btn {
-                margin: 5px;
-            }
-        }
+        .level-default { background-color: #ffffff; } /* 首次出现 */
+        .level-warning { background-color: #fff8c4; } /* 第二次出现 */
+        .level-danger { background-color: #ffd1d1; }  /* 多次不认识 */
     </style>
 </head>
 <body>
     <div class="container">
         <div id="app">
-            <div class="stats">
+            <div class="stats text-center mb-3">
                 <span id="count" class="badge bg-primary">剩余：0</span>
                 <span id="info" class="badge bg-secondary">详情</span>
             </div>
-            
-            <div class="progress-bar-container">
-                <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-            </div>
-            
-            <div class="flip-card">
-                <div class="flip-card-inner">
-                    <div class="flip-card-front">
-                        <div id="wordBoard">请上传词库文件</div>
-                    </div>
-                    <div class="flip-card-back">
-                        <div id="wordMeaning"></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="keyboard-shortcuts text-center mt-3">
-                <span>快捷键: 空格/↓/→ (认识) | 回车 (不认识) | ↑ (上一个) | F (翻转卡片)</span>
-            </div>
-            
-            <div id="results" class="mt-4" style="display: none;">
-                <h3 class="text-center mb-3">学习结果</h3>
-                <table class="results-table" id="resultsTable"></table>
+            <div id="wordBoard">加载中...</div>
+        </div>
+
+        <div id="results" style="display:none;">
+            <h3 class="text-center">学习结果</h3>
+            <div id="resultsContent" style="max-height: 60vh; overflow-y: auto;"></div>
+            <div class="text-center mt-3">
+                <button id="restartBtn" class="btn btn-primary">重新开始</button>
             </div>
         </div>
-        
+
         <div class="control-panel">
-            <div class="mb-3">
-                <input type="file" id="fileInput" class="form-control">
-            </div>
-            <div class="btn-group">
-                <button id="randomBtn" class="btn btn-secondary" onclick="randomizeWords()">单词乱序</button>
-                <button id="knowBtn" class="btn btn-success" onclick="markWord(true)">认识</button>
-                <button id="unknownBtn" class="btn btn-danger" onclick="markWord(false)">不认识</button>
-                <button id="flipBtn" class="btn btn-info" onclick="flipCard()">翻转卡片</button>
-                <button id="saveBtn" class="btn btn-warning" onclick="saveProgress()">保存进度</button>
-            </div>
+            <input type="file" id="fileInput" class="form-control mb-2" accept=".txt,.csv">
+            <button id="randomBtn" class="btn btn-secondary">单词乱序</button>
+            <button id="knowBtn" class="btn btn-success">认识</button>
+            <button id="unknownBtn" class="btn btn-danger">不认识</button>
+            <button id="flipBtn" class="btn btn-info">翻转卡片</button>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // 定义词库管理器类
-        class VocabularyManager {
-            constructor() {
-                // 单词库，包括不同级别的单词
-                this.wordLevels = [[], [], [], [], []];
-                this.currentIndex = 0;
-                this.isFlipped = false;
-                this.stats = { total: 0, known: 0, unknown: 0 };
-            }
-            
-            // 加载词库文件
-            loadVocabulary(fileContent) {
-                // 以回车或逗号为分隔符划分，并过滤空行
-                this.wordLevels[0] = fileContent.split(/[\n,]/g)
-                    .filter(line => line.trim().length > 0)
-                    .map(line => line.trim());
-                
-                this.currentIndex = 0;
-                this.stats.total = this.wordLevels[0].length;
-                this.updateProgressBar();
-                return this.getCurrentWord();
-            }
-            
-            // 获取当前单词数据
-            getCurrentWord() {
-                if (this.currentIndex >= this.wordLevels[0].length) {
-                    return null; // 已完成所有单词
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script>
+class VocabularyManager {
+    constructor() {
+        this.words = [];
+        this.currentIndex = 0;
+        this.stats = { mastered: [], reviewing: [], difficult: [] };
+        this.wordMap = {};
+        this.defaultWords = [
+            "apple 苹果", "banana 香蕉", "orange 橙子",
+            "vocabulary 词汇", "improve 改进", "memory 记忆"
+        ];
+    }
+
+    loadWords(wordsArray) {
+        this.words = wordsArray.map(line => {
+            const [word, ...meaning] = line.trim().split(/\s+/);
+            return { word, meaning: meaning.join(' '), knownCount: 0, unknownCount: 0 };
+        });
+        this.currentIndex = 0;
+        this.stats = { mastered: [], reviewing: [], difficult: [] };
+        this.wordMap = {};
+        this.words.forEach(w => this.wordMap[w.word] = w);
+        this.updateDisplay();
+    }
+
+    getCurrentWord() {
+        return this.words[this.currentIndex] || null;
+    }
+
+    markWord(isKnown) {
+        const currentWord = this.getCurrentWord();
+        if (!currentWord) return;
+
+        if (isKnown) {
+            currentWord.knownCount++;
+            if (currentWord.knownCount >= 2) {
+                if (!this.stats.mastered.includes(currentWord)) {
+                    this.stats.mastered.push(currentWord);
                 }
-                
-                return this.parseWordFormat(this.wordLevels[0][this.currentIndex]);
-            }
-            
-            // 解析单词格式，处理带*号的情况
-            parseWordFormat(wordEntry) {
-                if (!wordEntry) return { word: "", meaning: "", level: 0 };
-                
-                const parts = wordEntry.trim().split(/\s+/);
-                let word = parts[0] || "";
-                const meaning = parts[1] || "";
-                
-                // 计算星号数量（表示遗忘级别）
-                const starMatch = word.match(/^\*+/);
-                const level = starMatch ? starMatch[0].length : 0;
-                
-                // 去掉星号
-                word = word.replace(/^\*+/, "");
-                
-                return {
-                    word: word,
-                    meaning: meaning,
-                    level: level > 3 ? 3 : level
-                };
-            }
-            
-            // 标记单词（认识/不认识）
-            markWord(isKnown) {
-                if (this.currentIndex >= this.wordLevels[0].length) {
-                    return null;
+            } else {
+                if (!this.stats.reviewing.includes(currentWord)) {
+                    this.stats.reviewing.push(currentWord);
                 }
-                
-                const currentWord = this.getCurrentWord();
-                
-                if (isKnown) {
-                    // 认识：如果之前被标记过（在后面有带*号的版本），删除它
-                    this.stats.known++;
-                    const starredIndex = this.wordLevels[0].findIndex(w => 
-                        w.startsWith('*') && w.replace(/^\*+/, "") === currentWord.word);
-                    
-                    if (starredIndex !== -1) {
-                        this.wordLevels[0].splice(starredIndex, 1);
-                    }
-                    
-                    // 如果有级别，添加到较低级别
-                    if (currentWord.level > 0) {
-                        const wordWithMeaning = `${currentWord.word}        ${currentWord.meaning}`;
-                        // 从原级别移除
-                        const levelIndex = this.wordLevels[currentWord.level].indexOf(wordWithMeaning);
-                        if (levelIndex !== -1) {
-                            this.wordLevels[currentWord.level].splice(levelIndex, 1);
-                        }
-                        
-                        // 添加到较低级别
-                        if (!this.wordLevels[currentWord.level-1].includes(wordWithMeaning)) {
-                            this.wordLevels[currentWord.level-1].push(wordWithMeaning);
-                        }
-                    }
-                } else {
-                    // 不认识：添加到更高级别，并在词库后面添加带*号的版本
-                    this.stats.unknown++;
-                    const wordWithMeaning = `${currentWord.word}        ${currentWord.meaning}`;
-                    const starredWord = `*${this.wordLevels[0][this.currentIndex]}`;
-                    
-                    // 检查是否已存在带*号的版本
-                    if (!this.wordLevels[0].includes(starredWord)) {
-                        this.wordLevels[0].push(starredWord);
-                    }
-                    
-                    // 从当前级别移除
-                    if (currentWord.level > 0) {
-                        const levelIndex = this.wordLevels[currentWord.level].indexOf(wordWithMeaning);
-                        if (levelIndex !== -1) {
-                            this.wordLevels[currentWord.level].splice(levelIndex, 1);
-                        }
-                    }
-                    
-                    // 添加到更高级别
-                    const newLevel = Math.min(currentWord.level + 1, 4);
-                    if (!this.wordLevels[newLevel].includes(wordWithMeaning)) {
-                        this.wordLevels[newLevel].push(wordWithMeaning);
-                    }
+                this.words.push(currentWord); // 再次复习
+            }
+        } else {
+            currentWord.unknownCount++;
+            if (currentWord.unknownCount >= 3) {
+                if (!this.stats.difficult.includes(currentWord)) {
+                    this.stats.difficult.push(currentWord);
                 }
-                
-                // 前进到下一个单词
-                this.currentIndex++;
-                this.updateProgressBar();
-                
-                // 返回下一个单词
-                return this.getCurrentWord();
-            }
-            
-            // 回到上一个单词
-            previousWord() {
-                if (this.currentIndex > 0) {
-                    this.currentIndex--;
-                    this.updateProgressBar();
-                    return this.getCurrentWord();
-                }
-                return this.getCurrentWord();
-            }
-            
-            // 获取学习结果
-            getResults() {
-                return this.wordLevels.slice(1); // 只返回分级词库，不包括原始词库
-            }
-            
-            // 随机打乱单词顺序
-            randomizeWords() {
-                // 只打乱剩余未学习的单词
-                const remaining = this.wordLevels[0].slice(this.currentIndex);
-                remaining.sort(() => Math.random() - 0.5);
-                
-                this.wordLevels[0] = [
-                    ...this.wordLevels[0].slice(0, this.currentIndex),
-                    ...remaining
-                ];
-                
-                return this.getCurrentWord();
-            }
-            
-            // 获取当前进度
-            getProgress() {
-                return {
-                    current: this.currentIndex,
-                    total: this.wordLevels[0].length,
-                    percentage: this.wordLevels[0].length > 0 
-                        ? (this.currentIndex / this.wordLevels[0].length * 100).toFixed(1)
-                        : 0
-                };
-            }
-            
-            // 更新进度条
-            updateProgressBar() {
-                const progress = this.getProgress();
-                $('#progressBar').css('width', `${progress.percentage}%`);
-            }
-            
-            // 将学习进度保存为JSON文件
-            saveToFile() {
-                const data = {
-                    wordLevels: this.wordLevels,
-                    currentIndex: this.currentIndex,
-                    stats: this.stats,
-                    timestamp: new Date().toISOString()
-                };
-                
-                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
-                const url = URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `单词记忆进度_${new Date().toLocaleDateString()}.json`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
-            }
-            
-            // 从JSON文件加载进度
-            loadFromJson(jsonData) {
-                try {
-                    const data = JSON.parse(jsonData);
-                    this.wordLevels = data.wordLevels || [[], [], [], [], []];
-                    this.currentIndex = data.currentIndex || 0;
-                    this.stats = data.stats || { total: 0, known: 0, unknown: 0 };
-                    this.updateProgressBar();
-                    return this.getCurrentWord();
-                } catch (e) {
-                    console.error('加载进度失败:', e);
-                    return null;
+            } else {
+                if (!this.stats.reviewing.includes(currentWord)) {
+                    this.stats.reviewing.push(currentWord);
                 }
             }
+            this.words.push(currentWord); // 再次复习
         }
-        
-        // 初始化词库管理器
-        const vocabManager = new VocabularyManager();
-        
-        // 设置UI样式
-        function setWordStyle(wordData) {
-            if (!wordData) return;
-            
-            const colorSchemes = [
-                { word: 'black', bg: 'white', info: 'black' },          // 默认
-                { word: 'green', bg: '#f0fff0', info: 'green' },        // 级别1
-                { word: '#333', bg: '#fffde7', info: '#333' },          // 级别2
-                { word: 'white', bg: '#e74c3c', info: 'white' }         // 级别3
-            ];
-            
-            const scheme = colorSchemes[wordData.level] || colorSchemes[0];
-            
-            $('#wordBoard').css('color', scheme.word);
-            $('#wordMeaning').css('color', scheme.word);
-            $('body').css('background-color', scheme.bg);
-            $('.stats').css('color', scheme.info);
+
+        this.currentIndex++;
+        this.updateDisplay();
+    }
+
+    randomizeWords() {
+        const remaining = this.words.slice(this.currentIndex);
+        remaining.sort(() => Math.random() - 0.5);
+        this.words = [...this.words.slice(0, this.currentIndex), ...remaining];
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+        const wordData = this.getCurrentWord();
+        if (!wordData) {
+            this.showResults();
+            return;
         }
-        
-        // 更新显示
-        function updateDisplay(wordData) {
-            if (!wordData) {
-                showResults();
-                return;
+
+        $('#wordBoard').text(wordData.word);
+        $('#count').text(`剩余：${this.words.length - this.currentIndex}`);
+        $('#info').text(`已掌握：${this.stats.mastered.length} | 复习中：${this.stats.reviewing.length} | 困难词：${this.stats.difficult.length}`);
+
+        // 根据单词出现次数调整背景颜色
+        if (wordData.unknownCount >= 3) {
+            $('body').attr('class', 'level-danger');
+        } else if (wordData.unknownCount === 1 || wordData.unknownCount === 2) {
+            $('body').attr('class', 'level-warning');
+        } else {
+            $('body').attr('class', 'level-default');
+        }
+    }
+
+    showResults() {
+        $('#app').hide();
+        $('#results').show();
+
+        const categories = {
+            "已掌握": [],
+            "复习中": [],
+            "困难词": []
+        };
+
+        Object.values(this.wordMap).forEach(w => {
+            if (w.unknownCount >= 3) {
+                categories["困难词"].push(w);
+            } else if (w.knownCount >= 2 && w.unknownCount <= 1) {
+                categories["已掌握"].push(w);
+            } else {
+                categories["复习中"].push(w);
             }
-            
-            $('#wordBoard').text(wordData.word);
-            $('#wordMeaning').text(wordData.meaning);
-            
-            // 更新剩余数量
-            const progress = vocabManager.getProgress();
-            $('#count').text(`剩余：${vocabManager.wordLevels[0].length - vocabManager.currentIndex}`);
-            $('#info').text(`${wordData.level > 0 ? '★'.repeat(wordData.level) : ''} ${progress.percentage}%完成`);
-            
-            // 设置样式
-            setWordStyle(wordData);
-            
-            // 调整字体大小
-            adjustFontSize();
-            
-            // 重置卡片翻转
-            resetCardFlip();
-        }
-        
-        // 标记单词（认识/不认识）
-        function markWord(isKnown) {
-            const nextWord = vocabManager.markWord(isKnown);
-            updateDisplay(nextWord);
-        }
-        
-        // 随机打乱单词顺序
-        function randomizeWords() {
-            const word = vocabManager.randomizeWords();
-            updateDisplay(word);
-        }
-        
-        // 显示结果
-        function showResults() {
-            $('#app').fadeOut(300, function() {
-                $('#results').fadeIn(300);
-                
-                const results = vocabManager.getResults();
-                const $table = $('#resultsTable');
-                $table.empty();
-                
-                for (let i = 0; i < results.length; i++) {
-                    if (results[i].length === 0) continue;
-                    
-                    let headerClass = i === results.length - 1 ? 'table-danger' : 'table-info';
-                    let headerText = i === results.length - 1 
-                        ? '需要重点记忆的单词' 
-                        : `第${i+1}级记忆的单词 (${results[i].length}个)`;
-                    
-                    $table.append(`
-                        <tr class="${headerClass}">
-                            <th colspan="2">${headerText}</th>
-                        </tr>
-                    `);
-                    
-                    for (let j = 0; j < results[i].length; j++) {
-                        const wordData = vocabManager.parseWordFormat(results[i][j]);
-                        $table.append(`
-                            <tr>
-                                <td>${wordData.word}</td>
-                                <td>${wordData.meaning}</td>
-                            </tr>
-                        `);
-                    }
-                }
-                
-                // 显示统计信息
-                $table.prepend(`
-                    <tr class="table-primary">
-                        <th colspan="2">学习统计：总计 ${vocabManager.stats.total} 个单词，
-                            认识 ${vocabManager.stats.known} 个，
-                            不认识 ${vocabManager.stats.unknown} 个
-                        </th>
-                    </tr>
-                `);
+        });
+
+        let html = '';
+        for (const [category, words] of Object.entries(categories)) {
+            html += `<h5>${category} (${words.length})</h5><ul>`;
+            words.forEach(w => {
+                // html += `<li>${w.word} - ${w.meaning} (认识次数: ${w.knownCount}, 不认识次数: ${w.unknownCount})</li>`;
+                html += `<li>${w.word} ${w.meaning}</li>`;
             });
+            html += '</ul>';
         }
-        
-        // 调整字体大小
-        function adjustFontSize() {
-            const word = $('#wordBoard').text();
-            const wordLength = word.length;
-            const windowWidth = $(window).width();
-            
-            // 根据单词长度和窗口宽度调整字体大小
-            let fontSize = Math.min(windowWidth / wordLength * 1.2, windowWidth / 10);
-            fontSize = Math.max(fontSize, 24); // 最小字体大小
-            fontSize = Math.min(fontSize, 120); // 最大字体大小
-            
-            $('#wordBoard').css('font-size', `${fontSize}px`);
-            $('#wordMeaning').css('font-size', `${fontSize * 0.7}px`);
+        $('#resultsContent').html(html);
+    }
+}
+
+const vocabManager = new VocabularyManager();
+
+$(document).ready(() => {
+    vocabManager.loadWords(vocabManager.defaultWords);
+
+    $('#knowBtn').click(() => vocabManager.markWord(true));
+    $('#unknownBtn').click(() => vocabManager.markWord(false));
+    $('#randomBtn').click(() => vocabManager.randomizeWords());
+    $('#flipBtn').click(() => {
+        const currentWord = vocabManager.getCurrentWord();
+        if ($('#wordBoard').text() === currentWord.word) {
+            $('#wordBoard').text(currentWord.meaning);
+        } else {
+            $('#wordBoard').text(currentWord.word);
         }
-        
-        // 翻转卡片
-        function flipCard() {
-            $('.flip-card').toggleClass('flipped');
-            vocabManager.isFlipped = !vocabManager.isFlipped;
-        }
-        
-        // 重置卡片翻转
-        function resetCardFlip() {
-            if (vocabManager.isFlipped) {
-                $('.flip-card').removeClass('flipped');
-                vocabManager.isFlipped = false;
-            }
-        }
-        
-        // 保存进度
-        function saveProgress() {
-            vocabManager.saveToFile();
-        }
-        
-        // 文件上传处理
-        $('#fileInput').on('change', function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const fileContent = e.target.result;
-                
-                // 检查是否是JSON文件（保存的进度）
-                if (file.name.endsWith('.json')) {
-                    const wordData = vocabManager.loadFromJson(fileContent);
-                    updateDisplay(wordData);
-                } else {
-                    // 普通文本文件作为词库加载
-                    const wordData = vocabManager.loadVocabulary(fileContent);
-                    updateDisplay(wordData);
-                }
-                
-                $('#fileInput').blur();
-            };
-            
-            reader.readAsText(file, 'UTF-8');
-        });
-        
-        // 键盘事件处理
-        $(document).keydown(function(e) {
-            switch(e.keyCode) {
-                case 13: // Enter - 不认识
-                    markWord(false);
-                    break;
-                case 32: // Space - 认识
-                case 39: // Right arrow - 认识
-                case 40: // Down arrow - 认识
-                    markWord(true);
-                    break;
-                case 38: // Up arrow - 上一个
-                    const prevWord = vocabManager.previousWord();
-                    updateDisplay(prevWord);
-                    break;
-                case 70: // F - 翻转卡片
-                    flipCard();
-                    break;
-                case 83: // S - 保存进度 (按住Ctrl)
-                    if (e.ctrlKey) {
-                        saveProgress();
-                        e.preventDefault();
-                    }
-                    break;
-            }
-        });
-        
-        // 窗口大小改变时调整字体
-        $(window).resize(function() {
-            adjustFontSize();
-        });
-        
-        // 初始化显示
-        updateDisplay({ word: "请上传词库文件", meaning: "从下方选择文件开始", level: 0 });
-    </script>
+    });
+
+    $('#restartBtn').click(() => location.reload());
+
+    $('#fileInput').change(e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+            vocabManager.loadWords(lines);
+        };
+        reader.readAsText(file, 'UTF-8');
+    });
+});
+</script>
 </body>
 </html>
