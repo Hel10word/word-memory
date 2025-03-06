@@ -1,6 +1,0 @@
-apple 苹果
-banana 香蕉
-orange 橙子
-vocabulary 词汇
-improve 改进
-memory 记忆
