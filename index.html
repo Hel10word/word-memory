@@ -116,22 +116,37 @@ class VocabularyManager {
                 }
                 this.words.push(currentWord); // 再次复习
             }
+            this.currentIndex++;
+            this.updateDisplay();
         } else {
-            currentWord.unknownCount++;
-            if (currentWord.unknownCount >= 3) {
-                if (!this.stats.difficult.includes(currentWord)) {
-                    this.stats.difficult.push(currentWord);
-                }
-            } else {
-                if (!this.stats.reviewing.includes(currentWord)) {
-                    this.stats.reviewing.push(currentWord);
-                }
-            }
-            this.words.push(currentWord); // 再次复习
+            // 禁用所有按钮，保留“翻转卡片”和“下一个”
+            $('#knowBtn').prop('disabled', true);
+            $('#randomBtn').prop('disabled', true);
+            $('#unknownBtn').text('下一个');
+            $('#unknownBtn').off('click').click(() => this.nextWord());
         }
-
+    }
+    
+    nextWord() {
+        const currentWord = this.getCurrentWord();
         this.currentIndex++;
         this.updateDisplay();
+        currentWord.unknownCount++;
+        if (currentWord.unknownCount >= 3) {
+            if (!this.stats.difficult.includes(currentWord)) {
+                this.stats.difficult.push(currentWord);
+            }
+        } else {
+            if (!this.stats.reviewing.includes(currentWord)) {
+                this.stats.reviewing.push(currentWord);
+            }
+        }
+        this.words.push(currentWord); // 再次复习
+        // 恢复所有按钮
+        $('#knowBtn').prop('disabled', false);
+        $('#randomBtn').prop('disabled', false);
+        $('#unknownBtn').text('不认识');
+        $('#unknownBtn').off('click').click(() => this.markWord(false));
     }
 
     randomizeWords() {
